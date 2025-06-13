@@ -34,12 +34,21 @@ async function run() {
       res.send(result);
     });
 
-    //  Load all events
+    //  Load all events or filter by author email
     app.get("/events", async (req, res) => {
-      const result = await eventCollection.find().toArray();
-      res.send(result);
-    });
+      try {
+        const { author } = req.query;
 
+        // If author query is provided, filter by nested author.email
+        const query = author ? { "author.email": author } : {};
+
+        const result = await eventCollection.find(query).toArray();
+        res.send(result);
+      } catch (err) {
+        console.error("❌ Failed to fetch events:", err);
+        res.status(500).send({ error: "Failed to fetch events" });
+      }
+    });
     //  Load specific event by ID
     app.get("/events/:id", async (req, res) => {
       const { id } = req.params;
