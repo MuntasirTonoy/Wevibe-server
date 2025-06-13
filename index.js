@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-require('dotenv').config();
+require("dotenv").config();
 const app = express();
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const port = process.env.PORT || 3000;
@@ -47,12 +47,7 @@ async function run() {
     });
 
     // LOAD SPECIFIC  DATA BY IT'S ID
-    app.get(`/events/:id`, async (req, res) => {
-      const result = await eventCollection.findOne({
-        _id: new ObjectId(req.params.id),
-      });
-      res.send(result);
-    });
+
     //  DELETE
     app.delete("/events/:id", async (req, res) => {
       const result = await eventCollection.deleteOne({
