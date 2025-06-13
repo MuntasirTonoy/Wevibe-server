@@ -1,24 +1,19 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
-const { MongoClient, ServerApiVersion } = require("mongodb");
 const port = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
 
-// Middleware to handle errors
 app.get("/", (req, res) => {
   res.send("Hello World! server ready");
 });
 
-app.listen(port, () => {
-  console.log(`Server is running on ${port}`);
-});
-
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@we-vibe-cluster.r3lgiau.mongodb.net/?retryWrites=true&w=majority&appName=we-vibe-cluster`;
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
+
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -29,46 +24,65 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
     const eventCollection = client.db("we-vibe").collection("events");
 
-    //  upload data
+    //  Upload data
     app.post("/events", async (req, res) => {
       const newEvent = req.body;
       const result = await eventCollection.insertOne(newEvent);
       res.send(result);
     });
 
-    // LOAD ALL  COLLECTION   DATA
+    //  Load all events
     app.get("/events", async (req, res) => {
       const result = await eventCollection.find().toArray();
       res.send(result);
     });
 
-    // LOAD SPECIFIC  DATA BY IT'S ID
-    app.get(`/events/:id`, async (req, res) => {
-      const result = await eventCollection.findOne({
-        _id: new ObjectId(req.params.id),
-      });
-      res.send(result);
+    //  Load specific event by ID
+    app.get("/events/:id", async (req, res) => {
+      const { id } = req.params;
+
+      if (!ObjectId.isValid(id)) {
+        return res.status(400).send({ error: "Invalid ID format" });
+      }
+
+      try {
+        const result = await eventCollection.findOne({ _id: new ObjectId(id) });
+
+        if (!result) {
+          return res.status(404).send({ error: "Event not found" });
+        }
+
+        res.send(result);
+      } catch (err) {
+        console.error("Error fetching event:", err);
+        res.status(500).send({ error: "Server error while fetching event" });
+      }
     });
-    //  DELETE
+
+    //  Delete event
     app.delete("/events/:id", async (req, res) => {
-      const result = await eventCollection.deleteOne({
-        _id: new ObjectId(req.params.id),
-      });
+      const { id } = req.params;
+
+      if (!ObjectId.isValid(id)) {
+        return res.status(400).send({ error: "Invalid ID format" });
+      }
+
+      const result = await eventCollection.deleteOne({ _id: new ObjectId(id) });
       res.send(result);
     });
 
-    // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
-  } finally {
-    // Ensures that the client will close when you finish/error
-    // await client.close();
+    console.log("✅ Connected to MongoDB and server is ready!");
+  } catch (err) {
+    console.error("❌ Error connecting to MongoDB:", err);
   }
 }
+
 run().catch(console.dir);
+
+app.listen(port, () => {
+  console.log(`🚀 Server is running on port ${port}`);
+});
