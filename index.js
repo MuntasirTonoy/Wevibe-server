@@ -2,12 +2,15 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Middleware
 app.use(cors());
 app.use(express.json());
 
+// Health Check
 app.get("/", (req, res) => {
   res.send("Hello World! server ready");
 });
@@ -25,23 +28,24 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     await client.connect();
+
     const eventCollection = client.db("we-vibe").collection("events");
 
-    //  Upload data
+    // Create Event
     app.post("/events", async (req, res) => {
       const newEvent = req.body;
-      const result = await eventCollection.insertOne(newEvent);
+      const result = await eventCollection.insertOne({
+        ...newEvent,
+        joinedUsers: [], // Ensure it's always initialized
+      });
       res.send(result);
     });
 
-    //  Load all events or filter by author email
+    // Get All Events (or filter by author email)
     app.get("/events", async (req, res) => {
       try {
         const { author } = req.query;
-
-        // If author query is provided, filter by nested author.email
         const query = author ? { "author.email": author } : {};
-
         const result = await eventCollection.find(query).toArray();
         res.send(result);
       } catch (err) {
@@ -49,40 +53,31 @@ async function run() {
         res.status(500).send({ error: "Failed to fetch events" });
       }
     });
-    //  Load specific event by ID
+
+    // Get Single Event by ID
     app.get("/events/:id", async (req, res) => {
       const { id } = req.params;
-
       if (!ObjectId.isValid(id)) {
         return res.status(400).send({ error: "Invalid ID format" });
       }
-
-      try {
-        const result = await eventCollection.findOne({ _id: new ObjectId(id) });
-
-        if (!result) {
-          return res.status(404).send({ error: "Event not found" });
-        }
-
-        res.send(result);
-      } catch (err) {
-        console.error("Error fetching event:", err);
-        res.status(500).send({ error: "Server error while fetching event" });
+      const result = await eventCollection.findOne({ _id: new ObjectId(id) });
+      if (!result) {
+        return res.status(404).send({ error: "Event not found" });
       }
+      res.send(result);
     });
 
-    //  Delete event
+    // Delete Event by ID
     app.delete("/events/:id", async (req, res) => {
       const { id } = req.params;
-
       if (!ObjectId.isValid(id)) {
         return res.status(400).send({ error: "Invalid ID format" });
       }
-
       const result = await eventCollection.deleteOne({ _id: new ObjectId(id) });
       res.send(result);
     });
-    //  Update event
+
+    // Update Event by ID
     app.put("/events/:id", async (req, res) => {
       try {
         const id = req.params.id;
@@ -97,6 +92,52 @@ async function run() {
       } catch (err) {
         res.status(500).send({ error: "Failed to update event" });
       }
+    });
+
+    // Join or Unjoin Event (Toggle)
+    app.patch("/join-event", async (req, res) => {
+      const { eventId, userEmail } = req.body;
+
+      const event = await eventCollection.findOne({
+        _id: new ObjectId(eventId),
+      });
+      if (!event)
+        return res
+          .status(404)
+          .send({ success: false, message: "Event not found" });
+
+      const alreadyJoined = event.joinedUsers?.includes(userEmail);
+
+      if (alreadyJoined) {
+        await eventCollection.updateOne(
+          { _id: new ObjectId(eventId) },
+          { $pull: { joinedUsers: userEmail } }
+        );
+        return res.send({
+          success: true,
+          joined: false,
+          message: "Unjoined the event",
+        });
+      } else {
+        await eventCollection.updateOne(
+          { _id: new ObjectId(eventId) },
+          { $addToSet: { joinedUsers: userEmail } }
+        );
+        return res.send({
+          success: true,
+          joined: true,
+          message: "Joined the event",
+        });
+      }
+    });
+
+    // Get All Events Joined by a Specific User
+    app.get("/joined-events", async (req, res) => {
+      const { email } = req.query;
+      const events = await eventCollection
+        .find({ joinedUsers: email })
+        .toArray();
+      res.send(events);
     });
 
     await client.db("admin").command({ ping: 1 });
