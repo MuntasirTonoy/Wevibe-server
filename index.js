@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
@@ -30,6 +31,27 @@ async function run() {
     await client.connect();
 
     const eventCollection = client.db("we-vibe").collection("events");
+    // jwt verification middleware
+    app.post("/jwt", (req, res) => {
+      const user = { email: req.body.email };
+
+      res.send("ei ne moja kor..");
+    });
+    // Middleware to verify JWT
+    // const verifyJWT = (req, res, next) => {
+    //   const authHeader = req.headers.authorization;
+    //   if (!authHeader) {
+    //     return res.status(401).send({ error: "Unauthorized access" });
+    //   }
+    //   const token = authHeader.split(" ")[1];
+    //   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+    //     if (err) {
+    //       return res.status(403).send({ error: "Forbidden access" });
+    //     }
+    //     req.decoded = decoded;
+    //     next();
+    //   });
+    // };
 
     // Create Event
     app.post("/events", async (req, res) => {
