@@ -131,7 +131,7 @@ async function run() {
       }
     });
 
-    // Get All Events Joined by a Specific User
+    // Get event Specific User
     app.get("/joined-events", async (req, res) => {
       const { email } = req.query;
       const events = await eventCollection
