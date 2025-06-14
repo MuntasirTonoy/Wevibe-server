@@ -82,6 +82,22 @@ async function run() {
       const result = await eventCollection.deleteOne({ _id: new ObjectId(id) });
       res.send(result);
     });
+    //  Update event
+    app.put("/events/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const updatedEvent = req.body;
+
+        const result = await eventCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: updatedEvent }
+        );
+
+        res.send(result);
+      } catch (err) {
+        res.status(500).send({ error: "Failed to update event" });
+      }
+    });
 
     await client.db("admin").command({ ping: 1 });
     console.log("✅ Connected to MongoDB and server is ready!");
