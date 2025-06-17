@@ -1,20 +1,15 @@
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const jwt = require("jsonwebtoken");
-require("dotenv").config();
+// const jwt = require("jsonwebtoken");
+
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Middleware
 app.use(cors());
 app.use(express.json());
-
-// Health Check
-app.get("/", (req, res) => {
-  res.send("Hello World! server ready");
-});
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@we-vibe-cluster.r3lgiau.mongodb.net/?retryWrites=true&w=majority&appName=we-vibe-cluster`;
 
@@ -28,7 +23,7 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
 
     const eventCollection = client.db("we-vibe").collection("events");
     // jwt verification middleware
@@ -162,14 +157,17 @@ async function run() {
       res.send(events);
     });
 
-    await client.db("admin").command({ ping: 1 });
-    console.log("✅ Connected to MongoDB and server is ready!");
+    // await client.db("admin").command({ ping: 1 });
+    // console.log("✅ Connected to MongoDB and server is ready!");
   } catch (err) {
     console.error("❌ Error connecting to MongoDB:", err);
   }
 }
 
 run().catch(console.dir);
+app.get("/", (req, res) => {
+  res.send("Hello World! server ready");
+});
 
 app.listen(port, () => {
   console.log(`🚀 Server is running on port ${port}`);
