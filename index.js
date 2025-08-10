@@ -126,6 +126,28 @@ async function run() {
         });
       }
     });
+    // Add Comment
+    app.post("/events/:id/comments", async (req, res) => {
+      const { id } = req.params;
+      const { author, text } = req.body;
+
+      if (!ObjectId.isValid(id)) {
+        return res.status(400).send({ error: "Invalid event ID" });
+      }
+      if (!author?.email || !text) {
+        return res.status(400).send({ error: "Author and text are required" });
+      }
+
+      const comment = {
+        eventId: new ObjectId(id),
+        author,
+        text,
+        createdAt: new Date(),
+      };
+
+      const result = await commentCollection.insertOne(comment);
+      res.send(result);
+    });
 
     // Get event Specific User
     app.get("/joined-events", async (req, res) => {
