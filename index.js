@@ -149,6 +149,27 @@ async function run() {
       res.send(result);
     });
 
+    // Get Comments for an Event (with pagination)
+    app.get("/events/:id/comments", async (req, res) => {
+      const { id } = req.params;
+      const { page = 1, limit = 10 } = req.query;
+
+      if (!ObjectId.isValid(id)) {
+        return res.status(400).send({ error: "Invalid event ID" });
+      }
+
+      const skip = (parseInt(page) - 1) * parseInt(limit);
+
+      const comments = await commentCollection
+        .find({ eventId: new ObjectId(id) })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit))
+        .toArray();
+
+      res.send(comments);
+    });
+
     // Get event Specific User
     app.get("/joined-events", async (req, res) => {
       const { email } = req.query;
