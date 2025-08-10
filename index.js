@@ -194,6 +194,9 @@ async function run() {
           .send({ error: "You are not allowed to delete this comment" });
       }
 
+      const result = await commentCollection.deleteOne({
+        _id: new ObjectId(commentId),
+      });
       res.send(result);
     });
 
