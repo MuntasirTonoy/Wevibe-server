@@ -170,6 +170,36 @@ async function run() {
       res.send(comments);
     });
 
+    // Delete Comment (only by author)
+    app.delete("/comments/:commentId", async (req, res) => {
+      const { commentId } = req.params;
+      const { email } = req.query;
+
+      if (!ObjectId.isValid(commentId)) {
+        return res.status(400).send({ error: "Invalid comment ID" });
+      }
+      if (!email) {
+        return res.status(400).send({ error: "Email is required" });
+      }
+
+      const comment = await commentCollection.findOne({
+        _id: new ObjectId(commentId),
+      });
+      if (!comment) {
+        return res.status(404).send({ error: "Comment not found" });
+      }
+      if (comment.author.email !== email) {
+        return res
+          .status(403)
+          .send({ error: "You are not allowed to delete this comment" });
+      }
+
+      const result = await commentCollection.deleteOne({
+        _id: new ObjectId(commentId),
+      });
+      res.send(result);
+    });
+
     // Get event Specific User
     app.get("/joined-events", async (req, res) => {
       const { email } = req.query;
