@@ -209,8 +209,8 @@ async function run() {
       res.send(events);
     });
 
-    // await client.db("admin").command({ ping: 1 });
-    // console.log("✅ Connected to MongoDB and server is ready!");
+    await client.db("admin").command({ ping: 1 });
+    console.log("✅ Connected to MongoDB and server is ready!");
   } catch (err) {
     console.error("❌ Error connecting to MongoDB:", err);
   }
